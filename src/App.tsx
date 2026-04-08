@@ -1,42 +1,64 @@
+import { useGameStore } from './store/gameStore';
+import { Onboarding } from './components/Onboarding';
+import { CompanionChat } from './components/CompanionChat';
+import { PERSONALITY_LABELS } from './types/game';
+
 function App() {
+  const onboarded = useGameStore((s) => s.onboarded);
+  const companion = useGameStore((s) => s.companion);
+  const playerCode = useGameStore((s) => s.playerCode);
+  const resetAll = useGameStore((s) => s.resetAll);
+
+  if (!onboarded || !companion) {
+    return <Onboarding />;
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-8">
-      <div className="w-full max-w-2xl border border-emerald-500/30 bg-black/40 rounded-md shadow-[0_0_40px_rgba(16,185,129,0.1)]">
-        {/* 终端标题栏 */}
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-emerald-500/30 bg-emerald-500/5">
-          <div className="w-3 h-3 rounded-full bg-red-500/70" />
-          <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
-          <div className="w-3 h-3 rounded-full bg-green-500/70" />
-          <span className="ml-2 text-xs text-emerald-400/70 tracking-widest">
-            RAH://terminal — session_001
-          </span>
+      <div className="w-full max-w-2xl space-y-4">
+        <div className="border border-emerald-500/30 bg-black/40 rounded-md">
+          <div className="flex items-center gap-2 px-4 py-2 border-b border-emerald-500/30 bg-emerald-500/5">
+            <div className="w-3 h-3 rounded-full bg-red-500/70" />
+            <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
+            <div className="w-3 h-3 rounded-full bg-green-500/70" />
+            <span className="ml-2 text-xs text-emerald-400/70 tracking-widest">
+              RAH://terminal — session_001
+            </span>
+          </div>
+          <div className="p-6 text-sm text-emerald-300 space-y-2">
+            <p className="text-emerald-500/60">
+              [ RAH platform v0.0.1 online ]
+            </p>
+            <p className="text-emerald-500/60">
+              [ AI companion:{' '}
+              <span className="text-emerald-300">{companion.name}</span> (
+              {PERSONALITY_LABELS[companion.personality]} / {companion.mbti}) ]
+            </p>
+            <p className="pt-2">
+              欢迎回来，
+              <span className="text-amber-300">#{playerCode}</span>。
+            </p>
+            <p className="text-emerald-500/50 text-xs italic pt-2">
+              {companion.name} 正在线上，随时为您服务。
+            </p>
+          </div>
         </div>
 
-        {/* 终端正文 */}
-        <div className="p-6 space-y-2 text-sm leading-relaxed text-emerald-300">
-          <p className="text-emerald-500/60">[ booting RAH platform v0.0.1 ... ]</p>
-          <p className="text-emerald-500/60">[ verifying citizen credentials ... OK ]</p>
-          <p className="text-emerald-500/60">
-            [ AI companion module: <span className="text-emerald-300">online</span> ]
-          </p>
-          <p className="pt-4">
-            欢迎，<span className="text-white">访客</span>。
-          </p>
-          <p>
-            您已被识别为：
-            <span className="text-amber-300">非自愿失业人员 #A-7741</span>
-          </p>
-          <p className="pt-2 text-emerald-200">
-            出租人类（Rent-A-Human）平台正在为您匹配可用任务...
-          </p>
-          <p className="pt-4 text-emerald-500/40 italic">
-            &gt; 项目骨架运行成功，等待接入 AI 管家
-            <span className="inline-block w-2 h-4 ml-1 bg-emerald-400 animate-pulse align-middle" />
-          </p>
+        <CompanionChat />
+
+        <div className="flex justify-end">
+          <button
+            onClick={() => {
+              if (confirm('确定要重置所有进度吗？（仅用于测试）')) resetAll();
+            }}
+            className="text-xs text-emerald-500/40 hover:text-emerald-400 underline"
+          >
+            [重置测试数据]
+          </button>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
