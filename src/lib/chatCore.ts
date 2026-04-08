@@ -1,4 +1,9 @@
-import type { Companion, ChatMessage } from '../types/game';
+import type {
+  Companion,
+  ChatMessage,
+  PlayerStats,
+  Task,
+} from '../types/game';
 import { buildSystemPrompt } from './prompts';
 
 const ZHIPU_MODEL = 'glm-4-flash';
@@ -8,6 +13,8 @@ export type ChatRequest = {
   companion: Companion;
   playerCode: string;
   messages: ChatMessage[];
+  stats?: PlayerStats;
+  focusedTask?: Task | null;
 };
 
 export type ChatResponse = {
@@ -15,9 +22,8 @@ export type ChatResponse = {
 };
 
 /**
- * Calls Zhipu GLM-4-Flash (免费 + 国内可直连) with the game context.
- * Shared by the Vite dev middleware and the Cloudflare Pages Function
- * so local + production behave identically.
+ * Calls Zhipu GLM-4-Flash with game context.
+ * Shared by the Vite dev middleware and the Cloudflare Pages Function.
  */
 export async function callLLM(
   req: ChatRequest,
@@ -27,15 +33,14 @@ export async function callLLM(
     throw new Error('ZHIPU_API_KEY is not configured');
   }
 
-  const systemPrompt = buildSystemPrompt(req.companion, req.playerCode);
+  const systemPrompt = buildSystemPrompt(req.companion, req.playerCode, {
+    stats: req.stats,
+    focusedTask: req.focusedTask ?? null,
+  });
 
-  // OpenAI-compatible chat format
   const messages = [
     { role: 'system', content: systemPrompt },
-    ...req.messages.map((m) => ({
-      role: m.role, // 'user' | 'assistant'
-      content: m.content,
-    })),
+    ...req.messages.map((m) => ({ role: m.role, content: m.content })),
   ];
 
   const res = await fetch(ZHIPU_URL, {

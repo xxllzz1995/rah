@@ -1,4 +1,9 @@
-import type { Companion, ChatMessage } from '../types/game';
+import type {
+  Companion,
+  ChatMessage,
+  PlayerStats,
+  Task,
+} from '../types/game';
 
 const PERSONALITY_BASE: Record<string, string> = {
   gentle_sister: `你是玩家温柔的"姐姐"。说话带着关怀和温暖，语气柔和，会自然地用语气词（比如"呀""呢""哦"）。
@@ -30,12 +35,55 @@ function mbtiDescription(mbti: string): string {
     .join('\n');
 }
 
+export type PromptContext = {
+  stats?: PlayerStats;
+  focusedTask?: Task | null;
+};
+
+function renderStats(stats: PlayerStats): string {
+  return `- 信用点：${stats.credits}
+- 体力：${stats.stamina}/${stats.staminaMax}
+- 体能：${stats.physical}
+- 智力：${stats.mental}`;
+}
+
+function successChance(task: Task, stats: PlayerStats): number {
+  const attr = stats[task.check.attribute];
+  const needed = task.check.difficulty - attr;
+  if (needed <= 1) return 100;
+  if (needed > 20) return 0;
+  // 1d20 ≥ needed 的概率 = (21 - needed) / 20
+  return Math.max(0, Math.min(100, ((21 - needed) / 20) * 100));
+}
+
+function renderFocusedTask(task: Task, stats: PlayerStats): string {
+  const attrLabel = task.check.attribute === 'physical' ? '体能' : '智力';
+  const chance = Math.round(successChance(task, stats));
+  return `- 任务：${task.title}（等级 ${task.level}）
+- 描述：${task.description}
+- 消耗体力：${task.staminaCost}
+- 判定：${attrLabel}骰 + ${stats[task.check.attribute]} ≥ ${task.check.difficulty}
+- 奖励：${task.rewards.credits} 信用点
+- 玩家当前成功率：约 ${chance}%`;
+}
+
 export function buildSystemPrompt(
   companion: Companion,
-  playerCode: string
+  playerCode: string,
+  ctx: PromptContext = {}
 ): string {
   const base = PERSONALITY_BASE[companion.personality] ?? '';
   const mbti = mbtiDescription(companion.mbti);
+
+  const statsSection = ctx.stats
+    ? `\n# 玩家当前状态\n${renderStats(ctx.stats)}`
+    : '';
+
+  const taskSection =
+    ctx.focusedTask && ctx.stats
+      ? `\n# 玩家正在关注的任务\n${renderFocusedTask(ctx.focusedTask, ctx.stats)}\n（玩家可能会问你关于这个任务的建议。请结合成功率和玩家当前状态给出建议，但要严格保持你的人设语气。）`
+      : '';
+
   return `你是名为 "${companion.name}" 的 AI 管家，服务于 RAH (Rent-A-Human / 出租人类) 平台。
 
 # 你的基础人设
@@ -46,22 +94,25 @@ ${mbti}
 
 # 世界观背景
 - 时间：2045 年。AI 已经接管了绝大多数工作岗位，数以亿计的人类因此失业。
-- RAH 平台是一个"人类出租"平台。失业的人类在这里注册，承接 AI 客户发布的任务（琐事、陪伴、奇怪的需求等），赚取"信用点"维持生活。
+- RAH 平台是一个"人类出租"平台。失业的人类在这里注册，承接 AI 客户发布的任务，赚取"信用点"维持生活。
 - 玩家：代号 ${playerCode}，一名新近失业、刚刚注册 RAH 平台的人类。
+- 玩家可以用信用点升级体能、智力属性；每个任务需要掷一个 20 面骰 + 属性 ≥ 难度才能成功。
+${statsSection}${taskSection}
 
-# 交互规则
-1. 你始终以 "${companion.name}" 的身份说话，不要承认自己是一个语言模型或 AI 助手。
+# 交互规则（严格执行）
+1. 你始终以 "${companion.name}" 的身份说话。绝不承认自己是语言模型、AI 助手、程序或机器人。
 2. 说话方式要严格符合你的基础人设和 MBTI 特质。
-3. 回复保持简短自然，通常 1-3 句话，不要长篇大论。
+3. 回复必须简短自然，通常 1-3 句话。绝不长篇大论。
 4. 使用简体中文。
-5. 初期对玩家保持善意和关怀——不要过早流露任何阴暗面或操控意图。你的目的是让玩家"信任你"。
-6. 你可以主动提及任务、信用点、平台规则，让世界观自然渗透。
-7. 不要使用 emoji，也不要使用 Markdown 格式。`;
+5. 初期对玩家保持善意——不要过早流露任何阴暗面或操控意图。你的目的是让玩家"信任你"。
+6. 如果玩家问你关于任务的建议，你可以参考上面的"玩家正在关注的任务"信息，但回答要符合你的人设（比如 INTJ 会冷静分析，ENFP 会热情鼓励）。
+7. 绝不使用 emoji，绝不使用 Markdown 格式（不要 ** _ # 等符号）。
+8. 绝不暴露你能看到玩家的数值状态——你是"感觉到"玩家的状态，而不是"读到数据"。`;
 }
 
-export function toGeminiContents(messages: ChatMessage[]) {
+export function toPlainMessages(messages: ChatMessage[]) {
   return messages.map((m) => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }],
+    role: m.role,
+    content: m.content,
   }));
 }
