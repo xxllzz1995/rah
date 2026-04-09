@@ -7,7 +7,7 @@ import { devApiPlugin } from './vite-dev-api'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
-    base: '/rah/',
+    base: process.env.GITHUB_PAGES ? '/rah/' : '/',
     plugins: [
       react(),
       tailwindcss(),
