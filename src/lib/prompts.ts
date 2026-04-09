@@ -4,6 +4,8 @@ import type {
   PlayerStats,
   Task,
 } from '../types/game';
+import { ATTRIBUTE_LABELS } from '../types/game';
+import { estimateSuccessChance } from './dice';
 
 const PERSONALITY_BASE: Record<string, string> = {
   gentle_sister: `你是玩家温柔的"姐姐"。说话带着关怀和温暖，语气柔和，会自然地用语气词（比如"呀""呢""哦"）。
@@ -38,32 +40,40 @@ function mbtiDescription(mbti: string): string {
 export type PromptContext = {
   stats?: PlayerStats;
   focusedTask?: Task | null;
+  playerName?: string;
+  playerProfession?: string;
 };
 
 function renderStats(stats: PlayerStats): string {
   return `- 信用点：${stats.credits}
 - 体力：${stats.stamina}/${stats.staminaMax}
 - 体能：${stats.physical}
-- 智力：${stats.mental}`;
+- 智力：${stats.mental}
+- 感知：${stats.perception}
+- 共情：${stats.empathy}`;
 }
 
-function successChance(task: Task, stats: PlayerStats): number {
-  const attr = stats[task.check.attribute];
-  const needed = task.check.difficulty - attr;
-  if (needed <= 1) return 100;
-  if (needed > 20) return 0;
-  // 1d20 ≥ needed 的概率 = (21 - needed) / 20
-  return Math.max(0, Math.min(100, ((21 - needed) / 20) * 100));
+function renderPlayerIdentity(playerCode: string, ctx: PromptContext): string {
+  const namePart = ctx.playerName ? `名字 ${ctx.playerName}，` : '';
+  const codePart = `代号 ${playerCode}`;
+  if (!ctx.playerProfession) {
+    return `${namePart}${codePart}，一名新近失业、刚刚注册 RAH 平台的人类。`;
+  }
+  if (ctx.playerProfession === '无业游民') {
+    return `${namePart}${codePart}，一名从未真正进入过劳动力市场的"无业游民"，刚刚注册 RAH 平台。`;
+  }
+  return `${namePart}${codePart}，前${ctx.playerProfession}（岗位 5 年前被 AI 取代），刚刚注册 RAH 平台的人类。`;
 }
 
 function renderFocusedTask(task: Task, stats: PlayerStats): string {
-  const attrLabel = task.check.attribute === 'physical' ? '体能' : '智力';
-  const chance = Math.round(successChance(task, stats));
-  return `- 任务：${task.title}（等级 ${task.level}）
+  const attrLabel = ATTRIBUTE_LABELS[task.check.attribute];
+  const attrValue = stats[task.check.attribute];
+  const chance = estimateSuccessChance(task.check.difficulty, attrValue);
+  const checkType = task.check.type === 'red' ? '红检（一次性）' : '白检（可重试）';
+  return `- 任务：${task.title}（等级 ${task.level}，${checkType}）
 - 描述：${task.description}
 - 消耗体力：${task.staminaCost}
-- 判定：${attrLabel}骰 + ${stats[task.check.attribute]} ≥ ${task.check.difficulty}
-- 奖励：${task.rewards.credits} 信用点
+- 判定：2d6 + ${attrLabel}(${attrValue}) ≥ ${task.check.difficulty}
 - 玩家当前成功率：约 ${chance}%`;
 }
 
@@ -95,8 +105,10 @@ ${mbti}
 # 世界观背景
 - 时间：2045 年。AI 已经接管了绝大多数工作岗位，数以亿计的人类因此失业。
 - RAH 平台是一个"人类出租"平台。失业的人类在这里注册，承接 AI 客户发布的任务，赚取"信用点"维持生活。
-- 玩家：代号 ${playerCode}，一名新近失业、刚刚注册 RAH 平台的人类。
-- 玩家可以用信用点升级体能、智力属性；每个任务需要掷一个 20 面骰 + 属性 ≥ 难度才能成功。
+- 玩家：${renderPlayerIdentity(playerCode, ctx)}
+- 玩家有 4 项属性：体能、智力、感知、共情。可以用信用点升级。
+- 任务判定方式：2d6 + 对应属性 ≥ 难度即成功；双 6 大成功，双 1 大失败。
+- 任务分白检（失败可重试）和红检（一次性，机会只有一次）。
 ${statsSection}${taskSection}
 
 # 交互规则（严格执行）

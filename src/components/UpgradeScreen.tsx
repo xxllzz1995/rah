@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { useGameStore, UPGRADE_COST } from '../store/gameStore';
-import type { AttributeKey } from '../types/game';
+import {
+  ATTRIBUTE_LABELS,
+  ATTRIBUTE_ICONS,
+  ATTRIBUTE_DESCRIPTIONS,
+  type AttributeKey,
+} from '../types/game';
+
+const ATTR_ORDER: AttributeKey[] = ['physical', 'mental', 'perception', 'empathy'];
 
 export function UpgradeScreen() {
   const stats = useGameStore((s) => s.stats);
@@ -9,7 +16,7 @@ export function UpgradeScreen() {
 
   const handleUpgrade = (attr: AttributeKey) => {
     const ok = upgrade(attr);
-    setFlash(ok ? '升级成功' : '信用点不足');
+    setFlash(ok ? `${ATTRIBUTE_LABELS[attr]} 升级成功` : '信用点不足');
     setTimeout(() => setFlash(null), 1400);
   };
 
@@ -20,26 +27,20 @@ export function UpgradeScreen() {
       </div>
 
       <p className="text-xs text-emerald-500/70 leading-relaxed">
-        花费信用点提升你的属性。更高的属性意味着更稳定的掷骰，能接更难的任务。
+        花费信用点提升属性。属性影响 2d6 判定的总和——更高的属性意味着更稳定地通过更难的检定。
       </p>
 
-      <AttributeRow
-        name="💪 体能"
-        description="影响所有体力劳动类任务（搬运、跑腿、护送）的判定"
-        level={stats.physical}
-        cost={UPGRADE_COST}
-        canAfford={stats.credits >= UPGRADE_COST}
-        onUpgrade={() => handleUpgrade('physical')}
-      />
-
-      <AttributeRow
-        name="🧠 智力"
-        description="影响所有脑力劳动类任务（校对、导航、潜入）的判定"
-        level={stats.mental}
-        cost={UPGRADE_COST}
-        canAfford={stats.credits >= UPGRADE_COST}
-        onUpgrade={() => handleUpgrade('mental')}
-      />
+      {ATTR_ORDER.map((attr) => (
+        <AttributeRow
+          key={attr}
+          name={`${ATTRIBUTE_ICONS[attr]} ${ATTRIBUTE_LABELS[attr]}`}
+          description={ATTRIBUTE_DESCRIPTIONS[attr]}
+          level={stats[attr]}
+          cost={UPGRADE_COST}
+          canAfford={stats.credits >= UPGRADE_COST}
+          onUpgrade={() => handleUpgrade(attr)}
+        />
+      ))}
 
       {flash && (
         <div className="text-center text-xs text-amber-300 italic">

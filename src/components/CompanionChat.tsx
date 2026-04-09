@@ -11,6 +11,8 @@ type Props = {
 export function CompanionChat({ focusedTask, onClose }: Props) {
   const companion = useGameStore((s) => s.companion);
   const playerCode = useGameStore((s) => s.playerCode);
+  const playerName = useGameStore((s) => s.playerName);
+  const playerProfession = useGameStore((s) => s.playerProfession);
   const stats = useGameStore((s) => s.stats);
   const messages = useGameStore((s) => s.messages);
   const addMessage = useGameStore((s) => s.addMessage);
@@ -47,6 +49,8 @@ export function CompanionChat({ focusedTask, onClose }: Props) {
       const result = await sendChatMessage({
         companion,
         playerCode,
+        playerName,
+        playerProfession,
         messages: allMessages,
         stats,
         focusedTask: focusedTask ?? null,

@@ -21,9 +21,9 @@ export function StatusBar() {
         <span>{companion?.name ?? '未连接'}</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+      {/* 顶部一行：信用点 + 体力条 */}
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs mb-2">
         <StatRow label="信用点" value={stats.credits} icon="¢" />
-        <StatRow label="体能" value={stats.physical} icon="△" />
         <div>
           <div className="flex items-center justify-between text-emerald-400/80">
             <span>⚡ 体力</span>
@@ -38,7 +38,14 @@ export function StatusBar() {
             />
           </div>
         </div>
-        <StatRow label="智力" value={stats.mental} icon="◇" />
+      </div>
+
+      {/* 4 属性紧凑展示 */}
+      <div className="grid grid-cols-4 gap-2 text-[10px]">
+        <AttrPill icon="💪" label="体能" value={stats.physical} />
+        <AttrPill icon="🧠" label="智力" value={stats.mental} />
+        <AttrPill icon="👁" label="感知" value={stats.perception} />
+        <AttrPill icon="💗" label="共情" value={stats.empathy} />
       </div>
 
       {stats.stamina < stats.staminaMax && (
@@ -68,6 +75,25 @@ function StatRow({
         {icon} {label}
       </span>
       <span className="text-emerald-200 tabular-nums">{value}</span>
+    </div>
+  );
+}
+
+function AttrPill({
+  icon,
+  label,
+  value,
+}: {
+  icon: string;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded border border-emerald-500/20 bg-emerald-500/5 py-1">
+      <div className="text-[9px] text-emerald-500/70">
+        {icon} {label}
+      </div>
+      <div className="text-emerald-200 tabular-nums text-xs">{value}</div>
     </div>
   );
 }

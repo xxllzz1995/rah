@@ -2,23 +2,28 @@ import { useState } from 'react';
 import { useGameStore } from './store/gameStore';
 import { Onboarding } from './components/Onboarding';
 import { PhoneFrame } from './components/PhoneFrame';
-import { StatusBar } from './components/StatusBar';
-import { TaskList } from './components/TaskList';
-import { TaskDetail } from './components/TaskDetail';
+import { PhoneHome } from './components/PhoneHome';
+import { RahApp } from './components/RahApp';
+import { NewsApp } from './components/NewsApp';
+import { MapApp } from './components/MapApp';
 import { CompanionChat } from './components/CompanionChat';
-import { BottomNav } from './components/BottomNav';
-import { UpgradeScreen } from './components/UpgradeScreen';
 import type { Task } from './types/game';
 
-type View = 'tasks' | 'upgrade';
+/**
+ * App ID 列表。新增 App 时只需在这里加一个字符串字面量，
+ * 然后在 PhoneHome 的 APPS 数组里加图标，再在 App.tsx 的 switch 里加渲染。
+ */
+export type AppId = 'rah' | 'companion' | 'news' | 'map';
 
 function App() {
   const onboarded = useGameStore((s) => s.onboarded);
   const companion = useGameStore((s) => s.companion);
   const resetAll = useGameStore((s) => s.resetAll);
 
-  const [view, setView] = useState<View>('tasks');
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  // 当前打开的 App；null = 在主屏
+  const [openApp, setOpenApp] = useState<AppId | null>(null);
+  // CompanionChat 是个 modal 风格的浮层，可以从 RahApp 内部"问管家"，
+  // 也可以从主屏直接打开"私人管家"App。统一用一个 state。
   const [chatOpen, setChatOpen] = useState(false);
   const [chatFocusedTask, setChatFocusedTask] = useState<Task | null>(null);
 
@@ -26,45 +31,45 @@ function App() {
     return <Onboarding />;
   }
 
-  const openChat = (focusedTask: Task | null = null) => {
+  const goHome = () => setOpenApp(null);
+
+  const handleOpenApp = (id: AppId) => {
+    if (id === 'companion') {
+      // 私人管家 = 直接打开聊天浮层
+      setChatFocusedTask(null);
+      setChatOpen(true);
+      return;
+    }
+    setOpenApp(id);
+  };
+
+  const handleAskAI = (focusedTask: Task | null) => {
     setChatFocusedTask(focusedTask);
     setChatOpen(true);
   };
 
   return (
     <PhoneFrame>
-      <StatusBar />
+      {/* 主屏 */}
+      <PhoneHome onOpenApp={handleOpenApp} />
 
-      <div className="flex-1 overflow-hidden relative flex flex-col">
-        {view === 'tasks' && (
-          <TaskList onSelectTask={(t) => setSelectedTask(t)} />
-        )}
-        {view === 'upgrade' && <UpgradeScreen />}
+      {/* 各 App 浮层 */}
+      {openApp === 'rah' && (
+        <RahApp onBack={goHome} onAskAI={handleAskAI} />
+      )}
+      {openApp === 'news' && <NewsApp onBack={goHome} />}
+      {openApp === 'map' && <MapApp onBack={goHome} />}
 
-        {selectedTask && (
-          <TaskDetail
-            task={selectedTask}
-            onClose={() => setSelectedTask(null)}
-            onAskAI={(t) => openChat(t)}
-          />
-        )}
-
-        {chatOpen && (
-          <CompanionChat
-            focusedTask={chatFocusedTask}
-            onClose={() => {
-              setChatOpen(false);
-              setChatFocusedTask(null);
-            }}
-          />
-        )}
-      </div>
-
-      <BottomNav
-        view={view}
-        onChangeView={(v) => setView(v)}
-        onOpenChat={() => openChat(null)}
-      />
+      {/* 管家聊天浮层（z-index 比 App 高） */}
+      {chatOpen && (
+        <CompanionChat
+          focusedTask={chatFocusedTask}
+          onClose={() => {
+            setChatOpen(false);
+            setChatFocusedTask(null);
+          }}
+        />
+      )}
 
       {/* Dev reset button */}
       <button

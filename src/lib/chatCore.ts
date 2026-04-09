@@ -12,6 +12,8 @@ const ZHIPU_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 export type ChatRequest = {
   companion: Companion;
   playerCode: string;
+  playerName?: string;
+  playerProfession?: string;
   messages: ChatMessage[];
   stats?: PlayerStats;
   focusedTask?: Task | null;
@@ -36,6 +38,8 @@ export async function callLLM(
   const systemPrompt = buildSystemPrompt(req.companion, req.playerCode, {
     stats: req.stats,
     focusedTask: req.focusedTask ?? null,
+    playerName: req.playerName,
+    playerProfession: req.playerProfession,
   });
 
   const messages = [
