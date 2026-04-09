@@ -10,6 +10,7 @@ import {
   type AttributeKey,
 } from '../types/game';
 import { getTaskById } from '../data/tasks';
+import { getFoodById, CHEAPEST_FOOD_PRICE } from '../data/foods';
 import { resolveTask } from '../lib/dice';
 
 export type OnboardingPayload = {
@@ -25,7 +26,7 @@ type Actions = {
 
   // 任务相关
   attemptTask: (taskId: string) => TaskResolution | null;
-  rest: () => void;
+  buyFood: (foodId: string) => boolean;
   upgradeAttribute: (attr: AttributeKey) => boolean;
   clearLastResolution: () => void;
 };
@@ -59,6 +60,7 @@ const initial: GameState = {
   completedTaskIds: [],
   failedRedTaskIds: [],
   lastResolution: null,
+  gameOver: false,
 };
 
 export const UPGRADE_COST = 40; // 升一级属性需要的信用点
@@ -85,7 +87,8 @@ export const useGameStore = create<GameState & Actions>()(
       attemptTask: (taskId) => {
         const task = getTaskById(taskId);
         if (!task) return null;
-        const { stats } = get();
+        const { stats, gameOver } = get();
+        if (gameOver) return null;
         if (stats.stamina < task.staminaCost) return null;
 
         const resolution = resolveTask(task, stats);
@@ -119,6 +122,10 @@ export const useGameStore = create<GameState & Actions>()(
             }
           }
 
+          // 体力归零检测：体力 ≤ 0 且买不起最便宜的食物 → 游戏结束
+          const isGameOver =
+            newStamina <= 0 && newCredits < CHEAPEST_FOOD_PRICE;
+
           return {
             stats: {
               ...s.stats,
@@ -132,16 +139,31 @@ export const useGameStore = create<GameState & Actions>()(
             completedTaskIds: newCompleted,
             failedRedTaskIds: newFailedRed,
             lastResolution: resolution,
+            gameOver: isGameOver,
           };
         });
 
         return resolution;
       },
 
-      rest: () => {
+      buyFood: (foodId) => {
+        const food = getFoodById(foodId);
+        if (!food) return false;
+        const { stats, gameOver } = get();
+        if (gameOver) return false;
+        if (stats.credits < food.price) return false;
+
         set((s) => ({
-          stats: { ...s.stats, stamina: s.stats.staminaMax },
+          stats: {
+            ...s.stats,
+            credits: s.stats.credits - food.price,
+            stamina: Math.min(
+              s.stats.staminaMax,
+              s.stats.stamina + food.staminaRestore
+            ),
+          },
         }));
+        return true;
       },
 
       upgradeAttribute: (attr) => {
@@ -161,11 +183,11 @@ export const useGameStore = create<GameState & Actions>()(
     }),
     {
       name: 'rah-game-state',
-      // 版本 4：加 playerProfession（开场流程多一步）
+      // 版本 5：加外卖系统 + 游戏结束机制，移除免费休息
       // 旧存档字段不兼容，直接重置避免 undefined 崩溃
-      version: 4,
+      version: 5,
       migrate: (_persisted: unknown, version: number) => {
-        if (version < 4) {
+        if (version < 5) {
           return initial;
         }
         return _persisted as GameState;

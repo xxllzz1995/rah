@@ -22,6 +22,12 @@ const APPS: AppDef[] = [
     badge: 'NEW',
   },
   {
+    id: 'food',
+    name: '闪送外卖',
+    icon: '🍔',
+    bg: 'from-orange-500/40 to-red-700/40',
+  },
+  {
     id: 'companion',
     name: '私人管家',
     icon: '◉',

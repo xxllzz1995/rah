@@ -1,10 +1,10 @@
 import { useGameStore } from '../store/gameStore';
+import { CHEAPEST_FOOD_PRICE } from '../data/foods';
 
 export function StatusBar() {
   const stats = useGameStore((s) => s.stats);
   const playerCode = useGameStore((s) => s.playerCode);
   const companion = useGameStore((s) => s.companion);
-  const rest = useGameStore((s) => s.rest);
 
   const staminaRatio = stats.stamina / stats.staminaMax;
   const staminaColor =
@@ -13,6 +13,11 @@ export function StatusBar() {
       : staminaRatio > 0.25
         ? 'bg-amber-400'
         : 'bg-red-400';
+
+  // 低体力警告：体力 ≤ 2 且还买得起食物
+  const lowStamina = stats.stamina <= 2 && stats.credits >= CHEAPEST_FOOD_PRICE;
+  // 危险：体力 ≤ 2 且快买不起食物
+  const danger = stats.stamina <= 2 && stats.credits < CHEAPEST_FOOD_PRICE;
 
   return (
     <div className="border-b border-emerald-500/20 bg-black/80 backdrop-blur px-4 pt-8 pb-3">
@@ -48,13 +53,16 @@ export function StatusBar() {
         <AttrPill icon="💗" label="共情" value={stats.empathy} />
       </div>
 
-      {stats.stamina < stats.staminaMax && (
-        <button
-          onClick={rest}
-          className="mt-2 w-full text-[10px] py-1 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 rounded transition-colors"
-        >
-          [休息] 恢复体力至上限
-        </button>
+      {/* 低体力提醒 */}
+      {danger && (
+        <div className="mt-2 text-[10px] py-1.5 px-2 border border-red-500/40 bg-red-500/10 text-red-300 rounded text-center animate-pulse">
+          ⚠ 体力即将耗尽，信用点不足购买食物——你快撑不住了
+        </div>
+      )}
+      {lowStamina && !danger && (
+        <div className="mt-2 text-[10px] py-1.5 px-2 border border-amber-500/30 bg-amber-500/5 text-amber-300/80 rounded text-center">
+          ⚡ 体力不足，建议打开「闪送外卖」补充体力
+        </div>
       )}
     </div>
   );

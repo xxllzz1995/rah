@@ -6,18 +6,21 @@ import { PhoneHome } from './components/PhoneHome';
 import { RahApp } from './components/RahApp';
 import { NewsApp } from './components/NewsApp';
 import { MapApp } from './components/MapApp';
+import { FoodApp } from './components/FoodApp';
 import { CompanionChat } from './components/CompanionChat';
+import { GameOver } from './components/GameOver';
 import type { Task } from './types/game';
 
 /**
  * App ID 列表。新增 App 时只需在这里加一个字符串字面量，
  * 然后在 PhoneHome 的 APPS 数组里加图标，再在 App.tsx 的 switch 里加渲染。
  */
-export type AppId = 'rah' | 'companion' | 'news' | 'map';
+export type AppId = 'rah' | 'companion' | 'news' | 'map' | 'food';
 
 function App() {
   const onboarded = useGameStore((s) => s.onboarded);
   const companion = useGameStore((s) => s.companion);
+  const gameOver = useGameStore((s) => s.gameOver);
   const resetAll = useGameStore((s) => s.resetAll);
 
   // 当前打开的 App；null = 在主屏
@@ -29,6 +32,15 @@ function App() {
 
   if (!onboarded || !companion) {
     return <Onboarding />;
+  }
+
+  // 游戏结束 → 显示结局画面
+  if (gameOver) {
+    return (
+      <PhoneFrame>
+        <GameOver />
+      </PhoneFrame>
+    );
   }
 
   const goHome = () => setOpenApp(null);
@@ -57,6 +69,7 @@ function App() {
       {openApp === 'rah' && (
         <RahApp onBack={goHome} onAskAI={handleAskAI} />
       )}
+      {openApp === 'food' && <FoodApp onBack={goHome} />}
       {openApp === 'news' && <NewsApp onBack={goHome} />}
       {openApp === 'map' && <MapApp onBack={goHome} />}
 

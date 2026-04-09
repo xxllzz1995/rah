@@ -134,6 +134,16 @@ export type MapRegion = {
   unlockedAt: UnlockKey;
 };
 
+// ============ 外卖食物 ============
+export type FoodItem = {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  price: number;           // 信用点价格
+  staminaRestore: number;  // 恢复体力值
+};
+
 // ============ 全局状态 ============
 export type GameState = {
   onboarded: boolean;
@@ -149,4 +159,6 @@ export type GameState = {
   completedTaskIds: string[];        // 已永久关闭（红检或白检大成功）的任务
   failedRedTaskIds: string[];        // 红检失败的任务（也关闭，但状态不同）
   lastResolution: TaskResolution | null;
+
+  gameOver: boolean;         // 体力归零 → 游戏结束
 };
