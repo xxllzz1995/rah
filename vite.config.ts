@@ -7,6 +7,7 @@ import { devApiPlugin } from './vite-dev-api'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
+    base: '/rah/',
     plugins: [
       react(),
       tailwindcss(),
