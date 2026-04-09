@@ -29,6 +29,9 @@ type Actions = {
   buyFood: (foodId: string) => boolean;
   upgradeAttribute: (attr: AttributeKey) => boolean;
   clearLastResolution: () => void;
+
+  // 世界探索
+  setCurrentLocation: (id: string | null) => void;
 };
 
 const initialStats: PlayerStats = {
@@ -61,6 +64,7 @@ const initial: GameState = {
   failedRedTaskIds: [],
   lastResolution: null,
   gameOver: false,
+  currentLocation: null,
 };
 
 export const UPGRADE_COST = 40; // 升一级属性需要的信用点
@@ -180,14 +184,16 @@ export const useGameStore = create<GameState & Actions>()(
       },
 
       clearLastResolution: () => set({ lastResolution: null }),
+
+      setCurrentLocation: (id) => set({ currentLocation: id }),
     }),
     {
       name: 'rah-game-state',
-      // 版本 5：加外卖系统 + 游戏结束机制，移除免费休息
+      // 版本 6：加世界探索 (Phaser) + currentLocation
       // 旧存档字段不兼容，直接重置避免 undefined 崩溃
-      version: 5,
+      version: 6,
       migrate: (_persisted: unknown, version: number) => {
-        if (version < 5) {
+        if (version < 6) {
           return initial;
         }
         return _persisted as GameState;

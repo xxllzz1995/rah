@@ -5,9 +5,10 @@ import { useGameStore } from '../store/gameStore';
 
 type Props = {
   onBack: () => void;
+  embedded?: boolean;
 };
 
-export function FoodApp({ onBack }: Props) {
+export function FoodApp({ onBack, embedded }: Props) {
   const stats = useGameStore((s) => s.stats);
   const buyFood = useGameStore((s) => s.buyFood);
   const [lastBought, setLastBought] = useState<string | null>(null);
@@ -22,12 +23,8 @@ export function FoodApp({ onBack }: Props) {
     }
   };
 
-  return (
-    <AppFrame
-      title="闪送外卖"
-      subtitle="FLASH DELIVERY · 2045"
-      onBack={onBack}
-    >
+  const content = (
+    <>
       {/* 顶部状态 */}
       <div className="px-4 pt-3 pb-2 border-b border-emerald-500/10">
         <div className="flex items-center justify-between text-xs">
@@ -124,6 +121,14 @@ export function FoodApp({ onBack }: Props) {
 
         <div className="h-4" />
       </div>
+    </>
+  );
+
+  if (embedded) return <div className="flex flex-col">{content}</div>;
+
+  return (
+    <AppFrame title="闪送外卖" subtitle="FLASH DELIVERY · 2045" onBack={onBack}>
+      {content}
     </AppFrame>
   );
 }

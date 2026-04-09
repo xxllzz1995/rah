@@ -161,4 +161,5 @@ export type GameState = {
   lastResolution: TaskResolution | null;
 
   gameOver: boolean;         // 体力归零 → 游戏结束
+  currentLocation: string | null; // 当前进入的地点 ID（Phaser → React）
 };

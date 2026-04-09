@@ -9,6 +9,7 @@ import type { Task } from '../types/game';
 type Props = {
   onBack: () => void;
   onAskAI: (focusedTask: Task | null) => void;
+  embedded?: boolean; // 嵌入在 LocationOverlay 中时隐藏顶部栏
 };
 
 type View = 'tasks' | 'upgrade';
@@ -19,25 +20,27 @@ type View = 'tasks' | 'upgrade';
  * 这是从原来 App.tsx 抽出来的"任务系统"那一坨——把它当作手机里的一个 App，
  * 而不是整个应用的根。点 "← 主屏" 返回 PhoneHome。
  */
-export function RahApp({ onBack, onAskAI }: Props) {
+export function RahApp({ onBack, onAskAI, embedded }: Props) {
   const [view, setView] = useState<View>('tasks');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   return (
-    <div className="absolute inset-0 bg-black flex flex-col z-10">
-      {/* 顶部：返回主屏 + 标题 */}
-      <div className="px-4 pt-8 pb-2 border-b border-emerald-500/20 flex items-center justify-between">
-        <button
-          onClick={onBack}
-          className="text-emerald-400/70 hover:text-emerald-300 text-sm"
-        >
-          ← 主屏
-        </button>
-        <div className="text-[10px] text-emerald-500/60 tracking-widest">
-          RAH · RENT-A-HUMAN
+    <div className={`${embedded ? 'flex flex-col h-full' : 'absolute inset-0 bg-black flex flex-col z-10'}`}>
+      {/* 顶部：返回主屏 + 标题（嵌入模式下隐藏） */}
+      {!embedded && (
+        <div className="px-4 pt-8 pb-2 border-b border-emerald-500/20 flex items-center justify-between">
+          <button
+            onClick={onBack}
+            className="text-emerald-400/70 hover:text-emerald-300 text-sm"
+          >
+            ← 主屏
+          </button>
+          <div className="text-[10px] text-emerald-500/60 tracking-widest">
+            RAH · RENT-A-HUMAN
+          </div>
+          <div className="w-10" />
         </div>
-        <div className="w-10" />
-      </div>
+      )}
 
       <StatusBar />
 
